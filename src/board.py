@@ -1,6 +1,10 @@
 
-from SimpleCV import Image
-from src import card
+from SimpleCV import Color, Image
+import card as c
+from digits import *
+import numpy as np
+import cv2
+#from digits import digits
 
 class Board(object):
 	def __init__(self, board_img_file):
@@ -9,12 +13,12 @@ class Board(object):
 
 		self._num_cards = 5
 		self._minsize = 5000;
-		self.findColors = [(160, 125, 40)]
+		self.findColors = [(160, 125, 40), (125,140,60)]
 		self.cards = []
 		self.lane_separators = []
 
 	def __preprocess(self, img):
-		return img.resize(800,600)
+		return img.resize(1600,1200)
 
 	def findCards(self):
 		"""analyzes an image and returns all blobs
@@ -22,10 +26,15 @@ class Board(object):
 		:returns: A SimpleCV FeatureSet
 		:rtype: SimpleCV.Features.Features.FeatureSet
 		"""
-		fs = self.img.hueDistance(self.findColors[0]).binarize(thresh=50).findBlobs(minsize=self.minsize)
+		fs = self.img.hueDistance(self.findColors[0]).morphClose().binarize(thresh=25).findBlobs(minsize=self.minsize)
 		for b in fs:
-			self.cards.append(card.Card(b))
+			card = c.Card(self.img.crop(b))
+			if card.key:
+				self.cards.append(card)
+			b.drawMinRect(color=Color.RED)
+
 		return self.cards
+
 
 	def findLines(self):
 		"""analyzes an image and returns all lines
