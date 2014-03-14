@@ -1,10 +1,9 @@
 
 from SimpleCV import Color, Image
 import card as c
-from digits import *
+from digits import digits as ocr
 import numpy as np
 import cv2
-#from digits import digits
 
 class Board(object):
 	def __init__(self, board_img_file):
@@ -16,6 +15,8 @@ class Board(object):
 		self.findColors = [(160, 125, 40), (125,140,60)]
 		self.cards = []
 		self.lane_separators = []
+		self.model = ocr.SVM(C=2.67, gamma=5.383)
+		self.model.load()
 
 	def __preprocess(self, img):
 		return img.resize(1600,1200)
@@ -29,9 +30,13 @@ class Board(object):
 		fs = self.img.hueDistance(self.findColors[0]).morphClose().binarize(thresh=25).findBlobs(minsize=self.minsize)
 		for b in fs:
 			card = c.Card(self.img.crop(b))
-			if card.key:
+			if card.cells:
+				card.cells = map(ocr.deskew, card.cells)
+				samples = ocr.preprocess_hog(card.cells)
+				key = self.model.predict(samples)
+				card.key = ''.join(str(int(y)) for y in key)
 				self.cards.append(card)
-			b.drawMinRect(color=Color.RED)
+			b.drawMinRect(color=Color.RED, width=3)
 
 		return self.cards
 
@@ -56,7 +61,6 @@ class Board(object):
 	@property
 	def keys(self):
 	    return [card.key for card in self.cards]
-
 	
 	@property
 	def swimlanes(self):

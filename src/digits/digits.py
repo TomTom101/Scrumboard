@@ -37,7 +37,7 @@ import os
 
 SZ = 20 # size of each digit is SZ x SZ
 CLASS_N = 10
-DIGITS_FN = 'data/digits.png'
+DIGITS_FN = 'digits.png'
 
 def split2d(img, cell_size, flatten=True):
     h, w = img.shape[:2] 
@@ -66,10 +66,10 @@ def deskew(img):
 
 class StatModel(object):
     def load(self):
-        if os.path.isfile(model.TrainingFile):
+        if os.path.isfile(self.TrainingFile):
             print "loading model ..."
-            self.model.load(model.TrainingFile)
-            model.LoadedModel = True
+            self.model.load(self.TrainingFile)
+            self.LoadedModel = True
             return True
         return False
 
@@ -91,8 +91,8 @@ class KNearest(StatModel):
         return results.ravel()
 
 class SVM(StatModel):
-    StatModel.TrainingFile = 'digits_svm.dat'
-    StatModel.LoadedModel = False
+    TrainingFile = 'digits_svm.dat'
+    LoadedModel = False
     def __init__(self, C = 1, gamma = 0.5):
         
         self.params = dict( kernel_type = cv2.SVM_RBF,
@@ -113,7 +113,7 @@ def evaluate_model(model, digits, samples, labels):
     resp = model.predict(samples)
     err = (labels != resp).mean()
     print 'error: %.2f %%' % (err*100)
-    print  samples
+    print  resp
 
     confusion = np.zeros((10, 10), np.int32)
     for i, j in zip(labels, resp):
@@ -167,19 +167,19 @@ if __name__ == '__main__':
     shuffle = rand.permutation(len(digits))
     digits, labels = digits[shuffle], labels[shuffle]
 
-    digits2 = map(deskew, digits)
-    samples = preprocess_hog(digits2)
+    digits = map(deskew, digits)
+    samples = preprocess_hog(digits)
 
-    train_n = int(0.9*len(samples))
+    train_n = int(1*len(samples))
 
-    cv2.imshow('singel', digits2[0])
-    
-    digits_train, digits_test = np.split(digits2, [train_n])
+    cv2.imshow('singel', digits[0])
+    print digits[1]
+    digits_train, digits_test = np.split(digits, [train_n])
     samples_train, samples_test = np.split(samples, [train_n])
     labels_train, labels_test = np.split(labels, [train_n])
 
 
-    print 'training KNearest...'
+    #print 'training KNearest...'
     #model = KNearest(k=4)
     #model.train(samples_train, labels_train)
     #vis = evaluate_model(model, digits_test, samples_test, labels_test)
@@ -189,11 +189,12 @@ if __name__ == '__main__':
     if not model.load():
         print 'training SVM...'
         model.train(samples_train, labels_train)
-    vis = evaluate_model(model, digits_test, samples_test, labels_test)
-    cv2.imshow('SVM test', vis)
+        print "done"
     if not model.LoadedModel:
         print 'saving SVM as "digits_svm.dat"...'
         model.save('digits_svm.dat')
+    vis = evaluate_model(model, digits_test, samples_test, labels_test)
+    cv2.imshow('SVM test', vis)
 
     print "Done"
     cv2.waitKey(0)

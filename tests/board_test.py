@@ -7,7 +7,7 @@ import time
 
 
 class BoardTest(unittest.TestCase):
-	showImages = False
+	showImages = True
 	def setUp(self):
 		self.num_cards = 5
 		self.img = os.path.abspath('tests/data/board_clean_1.JPG')
@@ -61,12 +61,15 @@ class BoardTest(unittest.TestCase):
 			test_board.findCards()
 
 			if BoardTest.showImages:
-				#test_board.showImage()
+				test_board.showImage()
 				#cv2.imshow('SVM test', test_board.getCards())
-				time.sleep(6)
+				time.sleep(2)
+			for key in test_board.keys:
+				self.assertEqual(4, len(key), "Key '%s' has wrong size: %d" % (key, len(key)))
 
-			self.assertTrue("4444" in test_board.keys)
-			#self.assertTrue(6890 in test_board.keys)
+
+			self.assertTrue("2345" in test_board.keys, test_board.keys)
+			self.assertTrue("6870" in test_board.keys, test_board.keys)
 
 		return
 	def test_wait(self):
