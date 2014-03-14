@@ -3,11 +3,11 @@ import numpy as np
 
 class Card(object):
 
-	def __init__(self, img_card):
-		self.img_card = img_card
+	def __init__(self, img):
+		self.img = img
 		self.status = None
 		self._key = None
-		self.minsize = self.img_card.area() * .006
+		self.minsize = self.img.area() * .006
 		self.cells = self.__extractCells()
 		np.set_printoptions(threshold='nan')
 
@@ -15,17 +15,18 @@ class Card(object):
 	def __extractCells(self):
 		""" Need be filled
 		"""
-		self.img_card = self.img_card.binarize(thresh=90).morphClose().morphClose()
+		self.img = self.img.binarize(thresh=90).morphClose().dilate()
+		fs = self.img.findBlobs(minsize=self.minsize)
 
-		fs = self.img_card.findBlobs(minsize=self.minsize)
 		if fs:
 			cells = []
 			for b in fs.sortX():
-				r = b.drawMinRect(width=4, color=(255,0,0))
+				#r = b.drawMinRect(width=4, color=(255,0,0))
 				bb = b.boundingBox()
 				canvas = tuple([max(bb[-2:]) for x in range(2)])
-				digit = self.img_card.crop(b).embiggen(canvas).resize(20, 20)
+				digit = self.img.crop(b).embiggen(canvas).resize(20, 20)
 				digit.show()
+				time.sleep(1)
 				cells.append(digit.getGrayNumpyCv2())
 			return cells
 

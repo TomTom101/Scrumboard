@@ -16,3 +16,4 @@ suite = loader.loadTestsFromModule(board_test)
 
 runner = unittest.TextTestRunner(verbosity=2)
 result = runner.run(suite)
+ 

@@ -4,11 +4,10 @@ import card as c
 from digits import digits as ocr
 import numpy as np
 import cv2
+import time
 
 class Board(object):
 	def __init__(self, board_img_file):
-		img = Image(board_img_file).resize(800,600)
-		self.img = self.__preprocess(img)
 
 		self._num_cards = 5
 		self._minsize = 5000;
@@ -18,8 +17,12 @@ class Board(object):
 		self.model = ocr.SVM(C=2.67, gamma=5.383)
 		self.model.load()
 
+		img = Image(board_img_file)
+		self.img = self.__preprocess(img)
+
 	def __preprocess(self, img):
-		return img.resize(1600,1200)
+		return img.resize(800,600)
+
 
 	def findCards(self):
 		"""analyzes an image and returns all blobs
@@ -27,7 +30,8 @@ class Board(object):
 		:returns: A SimpleCV FeatureSet
 		:rtype: SimpleCV.Features.Features.FeatureSet
 		"""
-		fs = self.img.hueDistance(self.findColors[0]).morphClose().binarize(thresh=25).findBlobs(minsize=self.minsize)
+		img = self.img.hueDistance(self.findColors[0]).morphClose().binarize(thresh=25) 
+		fs = img.findBlobs(minsize=self.minsize)
 		for b in fs:
 			card = c.Card(self.img.crop(b))
 			if card.cells:
@@ -35,7 +39,8 @@ class Board(object):
 				samples = ocr.preprocess_hog(card.cells)
 				key = self.model.predict(samples)
 				card.key = ''.join(str(int(y)) for y in key)
-				self.cards.append(card)
+			self.cards.append(card)
+			b.image = self.img
 			b.drawMinRect(color=Color.RED, width=3)
 
 		return self.cards
