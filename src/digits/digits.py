@@ -49,7 +49,6 @@ def split2d(img, cell_size, flatten=True):
     return cells
 
 def load_digits(fn):
-    print 'loading "%s" ...' % fn
     digits_img = cv2.imread(fn, 0)
     digits = split2d(digits_img, (SZ, SZ))
     labels = np.repeat(np.arange(CLASS_N), len(digits)/CLASS_N)
@@ -67,7 +66,6 @@ def deskew(img):
 class StatModel(object):
     def load(self):
         if os.path.isfile(self.TrainingFile):
-            print "loading model ..."
             self.model.load(self.TrainingFile)
             self.LoadedModel = True
             return True
@@ -76,19 +74,6 @@ class StatModel(object):
     def save(self, fn):
         self.model.save(fn)
 
-
-class KNearest(StatModel):
-    def __init__(self, k = 3):
-        self.k = k
-        self.model = cv2.KNearest()
-
-    def train(self, samples, responses):
-        self.model = cv2.KNearest()
-        self.model.train(samples, responses)
-
-    def predict(self, samples):
-        retval, results, neigh_resp, dists = self.model.find_nearest(samples, self.k)
-        return results.ravel()
 
 class SVM(StatModel):
     TrainingFile = 'digits_svm.dat'
@@ -101,37 +86,13 @@ class SVM(StatModel):
                             gamma = gamma )
         self.model = cv2.SVM()
 
-    def train(self, samples, responses):
+    def train(self, samples, labels):
         self.model = cv2.SVM()
-        self.model.train(samples, responses, params = self.params)
+        self.model.train(samples, labels, params = self.params)
 
     def predict(self, samples):
         return self.model.predict_all(samples).ravel()
 
-
-def evaluate_model(model, digits, samples, labels):
-    resp = model.predict(samples)
-    err = (labels != resp).mean()
-    print 'error: %.2f %%' % (err*100)
-    print  resp
-
-    confusion = np.zeros((10, 10), np.int32)
-    for i, j in zip(labels, resp):
-        confusion[i, j] += 1
-    print 'confusion matrix:'
-    print confusion
-    print
-
-    vis = []
-    for img, flag in zip(digits, resp == labels):
-        img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
-        if not flag:
-            img[...,:2] = 0
-        vis.append(img)
-    return mosaic(25, vis)
-
-def preprocess_simple(digits):
-    return np.float32(digits).reshape(-1, SZ*SZ) / 255.0
 
 def preprocess_hog(digits):
     samples = []
@@ -155,46 +116,3 @@ def preprocess_hog(digits):
         samples.append(hist)
     return np.float32(samples)
 
-
-if __name__ == '__main__':
-    #print __doc__
-
-    digits, labels = load_digits(DIGITS_FN)
-
-    print 'preprocessing...'
-    # shuffle digits
-    rand = np.random.RandomState(321)
-    shuffle = rand.permutation(len(digits))
-    digits, labels = digits[shuffle], labels[shuffle]
-
-    digits = map(deskew, digits)
-    samples = preprocess_hog(digits)
-
-    train_n = int(1*len(samples))
-
-    cv2.imshow('singel', digits[0])
-    print digits[1]
-    digits_train, digits_test = np.split(digits, [train_n])
-    samples_train, samples_test = np.split(samples, [train_n])
-    labels_train, labels_test = np.split(labels, [train_n])
-
-
-    #print 'training KNearest...'
-    #model = KNearest(k=4)
-    #model.train(samples_train, labels_train)
-    #vis = evaluate_model(model, digits_test, samples_test, labels_test)
-    #cv2.imshow('KNearest test', vis)
-
-    model = SVM(C=2.67, gamma=5.383)
-    if not model.load():
-        print 'training SVM...'
-        model.train(samples_train, labels_train)
-        print "done"
-    if not model.LoadedModel:
-        print 'saving SVM as "digits_svm.dat"...'
-        model.save('digits_svm.dat')
-    vis = evaluate_model(model, digits_test, samples_test, labels_test)
-    cv2.imshow('SVM test', vis)
-
-    print "Done"
-    cv2.waitKey(0)
