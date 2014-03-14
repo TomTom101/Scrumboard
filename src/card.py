@@ -17,7 +17,7 @@ class Card(object):
 		if fs:
 			fs.draw()
 			fs.image = self.img_card	
-			for b in fs:
+			for b in fs.sortX():
 				r = b.drawMinRect(width=4, color=(255,0,0))
 				bb = b.boundingBox()
 				canvas = tuple([max(bb[-2:]) for x in range(2)])
