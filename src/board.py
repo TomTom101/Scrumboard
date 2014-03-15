@@ -7,6 +7,7 @@ import cv2
 import time
 
 class Board(object):
+	SVMData = 'digits_svm.dat'
 	def __init__(self, board_img_file):
 
 		self._num_cards = 5
@@ -15,8 +16,7 @@ class Board(object):
 		self.cards = []
 		self.lane_separators = []
 		self.model = ocr.SVM(C=2.67, gamma=5.383)
-		self.model.load()
-
+		self.model.load(Board.SVMData)
 		img = Image(board_img_file)
 		self.img = self.__preprocess(img)
 
