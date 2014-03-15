@@ -15,7 +15,7 @@ class Card(object):
 	def __extractCells(self):
 		""" Need be filled
 		"""
-		self.img = self.img.binarize(thresh=90).morphClose().dilate()
+		self.img = self.img.binarize(thresh=90).morphClose()
 		fs = self.img.findBlobs(minsize=self.minsize)
 
 		if fs:
@@ -23,7 +23,8 @@ class Card(object):
 			for b in fs.sortX():
 				#r = b.drawMinRect(width=4, color=(255,0,0))
 				bb = b.boundingBox()
-				canvas = tuple([max(bb[-2:]) for x in range(2)])
+				"""creates a tuple with 2 identical values of the longest side + 2px. e.g. for w*h = 65*70 == (72,72) """
+				canvas = tuple([(max(bb[-2:])+2) for x in range(2)])
 				digit = self.img.crop(b).embiggen(canvas).resize(20, 20)
 				digit.show()
 				time.sleep(1)
