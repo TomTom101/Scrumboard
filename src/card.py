@@ -7,7 +7,7 @@ class Card(object):
 		self.img = img
 		self.status = None
 		self._key = None
-		self.minsize = self.img.area() * .006
+		self.minsize = 10
 		self.cells = self.__extractCells()
 		np.set_printoptions(threshold='nan')
 
