@@ -65,33 +65,21 @@ def deskew(img):
     return img
 
 class StatModel(object):
-    def load(self):
-        if os.path.isfile(self.TrainingFile):
+    def load(self, s_size):
+        self.fn = "%d_%s" % ((s_size*100), self.TrainingFile)
+        if os.path.isfile(self.fn):
             print "loading model ..."
-            self.model.load(self.TrainingFile)
+            self.model.load(self.fn)
             self.LoadedModel = True
             return True
         return False
 
-    def save(self, fn):
-        self.model.save(fn)
+    def save(self):
+        self.model.save(self.fn)
 
-
-class KNearest(StatModel):
-    def __init__(self, k = 3):
-        self.k = k
-        self.model = cv2.KNearest()
-
-    def train(self, samples, responses):
-        self.model = cv2.KNearest()
-        self.model.train(samples, responses)
-
-    def predict(self, samples):
-        retval, results, neigh_resp, dists = self.model.find_nearest(samples, self.k)
-        return results.ravel()
 
 class SVM(StatModel):
-    TrainingFile = '__digits_svm.dat'
+    TrainingFile = 'digits_svm.dat'
     LoadedModel = False
     def __init__(self, C = 1, gamma = 0.5):
         
@@ -170,10 +158,10 @@ if __name__ == '__main__':
     digits = map(deskew, digits)
     samples = preprocess_hog(digits)
 
-    train_n = int(.05*len(samples))
+    s_size = .5
+    train_n = int(s_size*len(samples))
 
     cv2.imshow('singel', digits[0])
-    print digits[1]
     digits_train, digits_test = np.split(digits, [train_n])
     samples_train, samples_test = np.split(samples, [train_n])
     labels_train, labels_test = np.split(labels, [train_n])
@@ -186,13 +174,13 @@ if __name__ == '__main__':
     #cv2.imshow('KNearest test', vis)
 
     model = SVM(C=2.67, gamma=5.383)
-    if not model.load():
+    if not model.load(s_size):
         print 'training SVM...'
         model.train(samples_train, labels_train)
         print "done"
     if not model.LoadedModel:
-        print 'saving SVM as "%s"...' % SVM.TrainingFile
-        model.save(SVM.TrainingFile)
+        print 'saving SVM as "%s"...' % model.fn
+        model.save()
     vis = evaluate_model(model, digits_test, samples_test, labels_test)
     cv2.imshow('SVM test', vis)
 
