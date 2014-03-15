@@ -1,13 +1,15 @@
 
-from SimpleCV import Color, Image
-import card as c
-from digits import digits as ocr
+import time
 import numpy as np
 import cv2
-import time
+from SimpleCV import Color, Image
+from digits import digits as ocr
+from digits import common
+
+import card as c
 
 class Board(object):
-	SVMData = 'digits_svm.dat'
+	SVMData = '50_digits_svm.dat'
 	def __init__(self, board_img_file):
 
 		self._num_cards = 5
@@ -32,13 +34,15 @@ class Board(object):
 		"""
 		img = self.img.hueDistance(self.findColors[0]).morphClose().binarize(thresh=25) 
 		fs = img.findBlobs(minsize=self.minsize)
-		for b in fs:
-			card = c.Card(self.img.crop(b))
+		for b in fs.sortX():
+			card = c.Card(self.img.crop(b), self.img)
 			if card.cells:
 				card.cells = map(ocr.deskew, card.cells)
 				samples = ocr.preprocess_hog(card.cells)
 				key = self.model.predict(samples)
 				card.key = ''.join(str(int(y)) for y in key)
+				grid = common.mosaic(len(card.key), card.cells)
+				cv2.imwrite('%s.png' % card.key, grid)
 			self.cards.append(card)
 			b.image = self.img
 			b.drawMinRect(color=Color.RED, width=3)
