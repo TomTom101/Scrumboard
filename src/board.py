@@ -10,49 +10,71 @@ import card as c
 
 class Board(object):
 	SVMData = 'own_digits_svm.dat'
-	def __init__(self, board_img_file):
+	def __init__(self):
 
-		self._num_cards = 5
+		self._image = None
 		self._minsize = 5000;
 		self.findColors = [(160, 125, 40), (125,140,60)]
 		self.cards = []
 		self.lane_separators = []
 		self.model = ocr.SVM()
-		self.model.load(Board.SVMData)
-		img = Image(board_img_file)
-		self.img = self.__preprocess(img)
+		if not self.model.load(Board.SVMData):
+			raise Exception("SVM data could not be loaded: %s" % Board.SVMData)
+		
 		self.train_inbox_path = os.path.join(os.path.dirname(__file__), 'train/inbox')
 
 	def __preprocess(self, img):
 		return img.resize(800,600)
 
-
+	@property
+	def image(self):
+	    return self._image
+	@image.setter
+	def image(self, image):
+		if not image.__class__.__name__ == 'Image':
+			image = Image(image)
+		self._image = self.__preprocess(image)
+	
 	def findCards(self):
 		"""analyzes an image and returns all blobs
 
 		:returns: A SimpleCV FeatureSet
 		:rtype: SimpleCV.Features.Features.FeatureSet
 		"""
-		img = self.img.hueDistance(self.findColors[0]).morphClose().binarize(thresh=25) 
+		if not self._image:
+			raise Exception("Must set Board.image first!")
+
+		img = self._image.hueDistance(self.findColors[0]).morphClose().binarize(thresh=25) 
+		self.cards = []
 		fs = img.findBlobs(minsize=self.minsize)
-		for b in fs.sortX():
-			card = c.Card(self.img.crop(b), self.img)
-			if card.cells:
-				card.cells = map(ocr.deskew, card.cells)
-				samples = ocr.preprocess_hog(card.cells)
-				key = self.model.predict(samples)
-				card.key = ''.join(str(int(y)) for y in key)
-				grid = common.mosaic(len(card.key), card.cells)
-				self.saveTrainingFile(card.key, grid)
-			self.cards.append(card)
-			b.image = self.img
-			b.drawMinRect(color=Color.RED, width=3)
+		if fs:
+			for b in fs.sortX():
+				card = c.Card(self._image.crop(b))
+				card.key = self.detectKey(card.cells)
+				self.saveTrainingFile(card)
+				self.cards.append(card)
+				b.image = self._image
+				b.drawMinRect(color=Color.RED, width=3)
 
 		return self.cards
 
-	def saveTrainingFile(self, fn, img):
-		filename = '%s/%s.png' % (self.train_inbox_path, fn)
-		cv2.imwrite(filename, img)
+	def detectKey(self, cells):
+		if cells:
+			cells = map(ocr.deskew, cells)
+			samples = ocr.preprocess_hog(cells)
+			key = self.model.predict(samples)
+			return ''.join(str(int(y)) for y in key)
+
+		return []
+
+	def hasCards(self):
+		return len(self.cards) > 0
+
+	def saveTrainingFile(self, card):
+		if len(card.key):
+			grid = common.mosaic(len(card.key), card.cells)
+			filename = '%s/%s.png' % (self.train_inbox_path, card.key)
+			cv2.imwrite(filename, grid)
 
 	def findLines(self):
 		"""analyzes an image and returns all lines
@@ -61,15 +83,15 @@ class Board(object):
 		:returns: A SimpleCV FeatureSet
 		:rtype: SimpleCV.Features.Features.FeatureSet
 		"""
-		self.img = self.img.binarize(thresh=50).morphClose()
-#		lines = self.img.findLines(minlinelength=self.img.height*.5, maxlinegap=self.img.height*.5, maxpixelgap=1, threshold=150)
+		self._image = self._image.binarize(thresh=50).morphClose()
+#		lines = self._image.findLines(minlinelength=self._image.height*.5, maxlinegap=self._image.height*.5, maxpixelgap=1, threshold=150)
 
-		lines = self.img.findBlobs(minsize=self.img.height)
+		lines = self._image.findBlobs(minsize=self._image.height)
 		self.lane_separators = lines.x()
 		return lines
 
 	def save(self):
-		self.img.save('save.jpg')
+		self._image.save('save.jpg')
 	
 	@property
 	def keys(self):
@@ -94,4 +116,4 @@ class Board(object):
 		self.display = display
 
 	def showImage(self):
-		self.img.show()
+		self._image.show()
