@@ -77,7 +77,7 @@ class StatModel(object):
 
 
 class SVM(StatModel):
-    def __init__(self, data_file = None, C = 1, gamma = 0.5):
+    def __init__(self, data_file = None, C = 2.67, gamma = 5.383):
         
         self.params = dict( kernel_type = cv2.SVM_RBF,
                             svm_type = cv2.SVM_C_SVC,

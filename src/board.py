@@ -17,7 +17,7 @@ class Board(object):
 		self.findColors = [(160, 125, 40), (125,140,60)]
 		self.cards = []
 		self.lane_separators = []
-		self.model = ocr.SVM(C=2.67, gamma=5.383)
+		self.model = ocr.SVM()
 		self.model.load(Board.SVMData)
 		img = Image(board_img_file)
 		self.img = self.__preprocess(img)
