@@ -25,7 +25,7 @@ class Board(object):
 		self.train_inbox_path = os.path.join(os.path.dirname(__file__), 'train/inbox')
 
 	def __preprocess(self, img):
-		return img.resize(800,600)
+		return img#.resize(1600,1200)
 
 	@property
 	def image(self):
