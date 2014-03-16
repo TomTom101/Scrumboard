@@ -10,8 +10,9 @@ import card as c
 
 class Board(object):
 	SVMData = 'own_digits_svm.dat'
-	def __init__(self):
-
+	doSaveTrainingFile = False
+	def __init__(self, doSaveTrainingFile=False):
+		self.doSaveTrainingFile = doSaveTrainingFile
 		self._image = None
 		self._minsize = 5000;
 		self.findColors = [(160, 125, 40), (125,140,60)]
@@ -71,7 +72,7 @@ class Board(object):
 		return len(self.cards) > 0
 
 	def saveTrainingFile(self, card):
-		if len(card.key):
+		if self.doSaveTrainingFile and len(card.key):
 			grid = common.mosaic(len(card.key), card.cells)
 			filename = '%s/%s.png' % (self.train_inbox_path, card.key)
 			cv2.imwrite(filename, grid)
