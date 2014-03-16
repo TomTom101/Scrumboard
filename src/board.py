@@ -1,5 +1,5 @@
 
-import time
+import os, time
 import numpy as np
 import cv2
 from SimpleCV import Color, Image
@@ -9,7 +9,7 @@ from digits import common
 import card as c
 
 class Board(object):
-	SVMData = '50_digits_svm.dat'
+	SVMData = 'own_digits_svm.dat'
 	def __init__(self, board_img_file):
 
 		self._num_cards = 5
@@ -21,6 +21,7 @@ class Board(object):
 		self.model.load(Board.SVMData)
 		img = Image(board_img_file)
 		self.img = self.__preprocess(img)
+		self.train_inbox_path = os.path.join(os.path.dirname(__file__), 'train/inbox')
 
 	def __preprocess(self, img):
 		return img.resize(800,600)
@@ -42,13 +43,16 @@ class Board(object):
 				key = self.model.predict(samples)
 				card.key = ''.join(str(int(y)) for y in key)
 				grid = common.mosaic(len(card.key), card.cells)
-				cv2.imwrite('%s.png' % card.key, grid)
+				self.saveTrainingFile(card.key, grid)
 			self.cards.append(card)
 			b.image = self.img
 			b.drawMinRect(color=Color.RED, width=3)
 
 		return self.cards
 
+	def saveTrainingFile(self, fn, img):
+		filename = '%s/%s.png' % (self.train_inbox_path, fn)
+		cv2.imwrite(filename, img)
 
 	def findLines(self):
 		"""analyzes an image and returns all lines
