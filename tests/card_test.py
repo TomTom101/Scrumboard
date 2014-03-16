@@ -37,3 +37,20 @@ class CardTest(unittest.TestCase):
 		self.assertTrue("5678" in all_keys, all_keys)
 		self.assertTrue("1234" in all_keys, all_keys)
 
+	def test_read_wide_numbers(self):
+		all_keys = []
+		for i in range(1,2):
+			img = os.path.abspath('tests/data/board_numbers_wide_%d.JPG' % i)
+			test_board = board.Board()
+			test_board.image = img
+			test_board.minsize = 5000
+			test_board.findCards()
+			all_keys.extend(test_board.keys)
+
+			if CardTest.showImages:
+				test_board.showImage()
+				time.sleep(1)
+
+		self.assertTrue("2345" in all_keys, all_keys)
+		self.assertTrue("6890" in all_keys, all_keys)
+
