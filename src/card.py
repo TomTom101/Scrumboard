@@ -7,6 +7,7 @@ class Card(object):
 		self.img = img
 		self.status = None
 		self._key = None
+		self._x = 0
 		self.minsize = 10
 		self.cells = self.__extractCells()
 
@@ -32,6 +33,13 @@ class Card(object):
 
 		return None
 
+	@property
+	def x(self):
+	    return self._x
+	@x.setter
+	def x(self, value):
+	    self._x = value
+	
 	@property
 	def key(self):
 	    return self._key

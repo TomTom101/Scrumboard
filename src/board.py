@@ -16,8 +16,7 @@ class Board(object):
 		self._image = None
 		self._minsize = 5000;
 		self.findColors = [(160, 125, 40), (125,140,60)]
-		self.cards = []
-		self.lane_separators = []
+		self.lane_separators = None
 		self.model = ocr.SVM()
 		if not self.model.load(Board.SVMData):
 			raise Exception("SVM data could not be loaded: %s" % Board.SVMData)
@@ -36,6 +35,10 @@ class Board(object):
 		if not image.__class__.__name__ == 'Image':
 			image = Image(image)
 		self._image = self.__preprocess(image)
+
+	def card(self, key):
+	    return self._cards[key]
+
 	
 	def findCards(self):
 		"""analyzes an image and returns all blobs
@@ -47,18 +50,21 @@ class Board(object):
 			raise Exception("Must set Board.image first!")
 
 		img = self._image.hueDistance(self.findColors[0]).morphClose().binarize(thresh=25) 
-		self.cards = []
+		self._cards = {}
 		fs = img.findBlobs(minsize=self.minsize)
 		if fs:
 			for b in fs.sortX():
 				card = c.Card(self._image.crop(b))
 				card.key = self.detectKey(card.cells)
-				self.saveTrainingFile(card)
-				self.cards.append(card)
+				if card.key:
+					card.x = b.x
+					card.status = self.assignStatus(card)
+					self._cards[card.key] = card
+					self.saveTrainingFile(card)
 				b.image = self._image
 				b.drawMinRect(color=Color.RED, width=3)
 
-		return self.cards
+		return self._cards
 
 	def detectKey(self, cells):
 		if cells:
@@ -67,13 +73,26 @@ class Board(object):
 			key = self.model.predict(samples)
 			return ''.join(str(int(y)) for y in key)
 
-		return []
+		return None
+
+	def assignStatus(self, card):
+		if self.lane_separators == None:
+			self.findLines()
+
+		status = 0
+		if self.lane_separators != None:
+			for line_x in self.lane_separators:
+				if card.x < line_x:
+					return status 
+				status=status+1
+
+		return None
 
 	def hasCards(self):
-		return len(self.cards) > 0
+		return len(self._cards) > 0
 
 	def saveTrainingFile(self, card):
-		if self.doSaveTrainingFile and len(card.key):
+		if self.doSaveTrainingFile:
 			grid = common.mosaic(len(card.key), card.cells)
 			filename = '%s/%s.png' % (self.train_inbox_path, card.key)
 			cv2.imwrite(filename, grid)
@@ -85,19 +104,22 @@ class Board(object):
 		:returns: A SimpleCV FeatureSet
 		:rtype: SimpleCV.Features.Features.FeatureSet
 		"""
-		self._image = self._image.binarize(thresh=50).morphClose()
+		img = self._image.binarize(thresh=50).morphClose()
 #		lines = self._image.findLines(minlinelength=self._image.height*.5, maxlinegap=self._image.height*.5, maxpixelgap=1, threshold=150)
 
-		lines = self._image.findBlobs(minsize=self._image.height)
-		self.lane_separators = lines.x()
-		return lines
+		lines = img.findBlobs(minsize=self._image.height)
+		if lines:
+			self.lane_separators = lines.x()
+			self.lane_separators.sort()
+			return lines
+		return None
 
 	def save(self):
 		self._image.save('save.jpg')
 	
 	@property
 	def keys(self):
-	    return [card.key for card in self.cards]
+		return [card.key for card in self._cards.values()]
 	
 	@property
 	def swimlanes(self):
