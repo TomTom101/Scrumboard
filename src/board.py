@@ -10,9 +10,8 @@ import card as c
 
 class Board(object):
 	SVMData = 'own_digits_svm.dat'
-	doSaveTrainingFile = False
-	def __init__(self, doSaveTrainingFile=False):
-		self.doSaveTrainingFile = doSaveTrainingFile
+	def __init__(self, saveTrainingFile=False):
+		self.saveTrainingFile = saveTrainingFile
 		self._image = None
 		self._minsize = 5000;
 		self.findColors = [(160, 140, 40), (125,140,60)]
@@ -64,7 +63,7 @@ class Board(object):
 					card.x = b.x
 					card.status = self.assignStatus(card)
 					self._cards[card.key] = card
-					self.saveTrainingFile(card)
+					self.doSaveTrainingFile(card)
 				b.image = self._image
 				b.drawMinRect(color=Color.BLUE, width=3)
 
@@ -81,7 +80,7 @@ class Board(object):
 
 	def _getPostRotationCropRegion(self, blob):
 
-		x, y = (20, 20)
+		x, y = (0, 0)
 		# clock-wise, crop y
 		w = blob.minRectWidth()
 		h = blob.minRectHeight()
@@ -126,8 +125,8 @@ class Board(object):
 	def hasCards(self):
 		return len(self._cards) > 0
 
-	def saveTrainingFile(self, card):
-		if Board.doSaveTrainingFile:
+	def doSaveTrainingFile(self, card):
+		if self.saveTrainingFile:
 			grid = common.mosaic(len(card.key), card.cells)
 			filename = '%s/%s.png' % (self.train_inbox_path, card.key)
 			cv2.imwrite(filename, grid)
