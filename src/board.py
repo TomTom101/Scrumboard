@@ -93,7 +93,7 @@ class Board(object):
 		elif blob.angle() < .0:
 			y += rect[0][1]-rect[1][1]
 
-	 	print "angle: %.2f, x, y: %d, %d, w: %d, h: %d" % (blob.angle(), x, y, w, h)
+	 	#print "angle: %.2f, x, y: %d, %d, w: %d, h: %d" % (blob.angle(), x, y, w, h)
 
 		return (x, y, w-15, h-15)
 
