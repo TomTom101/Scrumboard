@@ -1,6 +1,5 @@
 import unittest
-import os
-#from mock import Mock
+import os, glob
 from src import board
 from SimpleCV import Display, Color
 import time
@@ -9,32 +8,25 @@ import time
 class BoardTest(unittest.TestCase):
 	showImages = False
 	def setUp(self):
-		self.num_cards = 5
 		self.board = board.Board()
 
 	def test_constructor(self):
 		self.assertTrue('SVM' == self.board.model.__class__.__name__)
 
 	def test_get_correct_number_of_cards(self):
-		for i in range(1,5):
-			img = os.path.abspath('tests/data/board_clean_%d.JPG' % i)
-			self.board.image = img
+		for file in glob.glob('tests/data/board_ni_*.JPG'):
+			self.board.image = os.path.abspath(file)
 			fs = self.board.findCards()
-			num_blobs = 0
-
-			if fs:
-				num_blobs = len(fs)
 
 			if BoardTest.showImages:
 				self.board.showImage()
 				time.sleep(2)
 
-			self.assertEqual(num_blobs, 5, '%d blob(s) found in %s' %  (num_blobs, img))
+			self.assertEqual(self.board.num_cards, 15, '%d blob(s) found in %s' %  (self.board.num_cards, file))
 
 	def test_get_correct_number_of_lines(self):
-		for i in range(1,3):
-			img = os.path.abspath('tests/data/board_numbers_%d.JPG' % i)
-			self.board.image = img
+		for file in glob.glob('tests/data/board_ni_*.JPG'):
+			self.board.image = os.path.abspath(file)
 			fs = self.board.findLines()
 			num_lines = 0
 
@@ -46,13 +38,12 @@ class BoardTest(unittest.TestCase):
 			if BoardTest.showImages:
 				self.board.showImage()
 				time.sleep(2)
-			self.assertEqual(self.board.swimlanes, 3, '%d line(s) found in %s' %  (num_lines, img))
+			self.assertEqual(self.board.swimlanes, 4, '%d line(s) found in %s' %  (num_lines, file))
 
 	def test_get_card_status(self):
-		for i in range(1,3):
-			img = os.path.abspath('tests/data/board_numbers_%d.JPG' % i)
-			self.board.image = img
+		for file in glob.glob('tests/data/board_ni_*.JPG'):
+			self.board.image = os.path.abspath(file)
 			fs = self.board.findCards()
-			self.assertEqual(0, self.board.card("2345").status)
-			self.assertEqual(1, self.board.card("6890").status)
+			self.assertEqual(1, self.board.card("2358").status)
+			self.assertEqual(2, self.board.card("2600").status)
 

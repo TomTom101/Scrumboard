@@ -23,8 +23,7 @@ class Board(object):
 		self.train_inbox_path = os.path.join(os.path.dirname(__file__), 'train/inbox')
 
 	def __preprocess(self, img):
-		#return img.scale(.5)
-		return img#.resize(1200)
+		return img.scale(.1)
 
 	@property
 	def image(self):
@@ -33,9 +32,10 @@ class Board(object):
 	def image(self, image):
 		if not image.__class__.__name__ == 'Image':
 			image = Image(image)
-		self._image = self.__preprocess(image)
-		area = float(self._image.width*self._image.height)
+		self._imageprocessed = self.__preprocess(image)
+		area = float(self._imageprocessed.width*self._imageprocessed.height)
 		self._minsize = area/500;
+		self._image = image
 
 	def card(self, key):
 	    return self._cards[key]
@@ -50,13 +50,14 @@ class Board(object):
 		if not self._image:
 			raise Exception("Must set Board.image first!")
 		""" hueDistance costs 50% of the performance! maybe better: findBlobsFromHueHistogram() """
-		img = self._image.hueDistance(self.findColors[0]).morphClose().binarize(thresh=15) 
+		img = self._imageprocessed.hueDistance(self.findColors[0]).morphClose().binarize(thresh=15) 
 		self._cards = {}
 		fs = img.findBlobs(minsize=self.minsize)
 
 		if fs:
 			self._num_cards = len(fs)
 			for b in fs.sortX():
+				b.image = self._image
 				card_img = self._prepareCardBlob(b)
 				card = c.Card(card_img)
 				card.key = self.detectKey(card.cells)
@@ -66,27 +67,32 @@ class Board(object):
 					card.status = self.assignStatus(card)
 					self._cards[card.key] = card
 					self.doSaveTrainingFile(card)
-				b.image = self._image
-				b.drawMinRect(color=Color.BLUE, width=3)
-
+				#b.image = img#.self._image
+				#b.drawMinRect(color=Color.BLUE, width=3)
+			#self.show(img)
 		return self._cards
 
 	def _prepareCardBlob(self, blob):
 		if abs(blob.angle()) > 45:
 			return self._image
-		img = self._image.crop(blob, centered=False).rotate(blob.angle(), point=[0,0], fixed=True)
+		crop_region = map(lambda x: ((10*x[0], 10*x[1])), blob.points)
+		#crop_region = blob
+		img = self._image.crop(crop_region, centered=False).rotate(blob.angle(), point=[0,0], fixed=True)
+		#self.show(img)
 		crop = self._getPostRotationCropRegion(blob)
+
 		if crop is not None:
 			img = img.crop(crop)
+		#self.show(img)
 		return img
 
 	def _getPostRotationCropRegion(self, blob):
-
 		x, y = (0, 0)
 		# clock-wise, crop y
 		w = blob.minRectWidth()
 		h = blob.minRectHeight()
 		rect = blob.minRect()
+		rect = map(lambda x: ((10*x[0], 10*x[1])), rect)
 		if blob.angle() > .0:
 			# counter clock-wise, crop x
 			x += rect[1][0]-rect[0][0]
@@ -97,7 +103,7 @@ class Board(object):
 
 	 	#print "angle: %.2f, x, y: %d, %d, w: %d, h: %d" % (blob.angle(), x, y, w, h)
 
-		return (x, y, w-15, h-15)
+		return (x, y, w*10-15, h*10-15)
 
 	def detectKey(self, cells):
 		if cells:
@@ -175,7 +181,7 @@ class Board(object):
 	def setDisplay(self, display):
 		self.display = display
 
-	def show(self, img=None, t=2):
+	def show(self, img=None, t=1):
 		if img is None:
 			img = self._image
 		img.show()

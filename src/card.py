@@ -8,12 +8,12 @@ class Card(object):
 		""" after binarization, increase canvas each side by 1px and fill with black. This way all areas that touch
 		the card will also be filled, like lines the card is hung over. The floodFill point can be any on the edge.
 		"""
-		self._image = img.binarize(thresh=95).morphClose().embiggen((img.width+2, img.height+2), color=Color.WHITE).floodFill((0,0), color=Color.BLACK)
+		self._image = img.binarize(thresh=95).morphClose().dilate().embiggen((img.width+2, img.height+2), color=Color.WHITE).floodFill((0,0), color=Color.BLACK)
 		self.status = None
 		self._key = None
 		self._x = 0
 		""" filter out noise. The size of course depends on the card dimension. This might be too much when cards are really small. """
-		self.minsize = 100
+		self.minsize = 50
 		self.cells = self.__extractCells()	
 
 	def __extractCells(self):
