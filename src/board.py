@@ -183,6 +183,10 @@ class Board(object):
     @minsize.setter
     def minsize(self, value):
         self._minsize = value
+
+    @property
+    def list_cards(self):
+        return [{"key": card.key, "status": card.status} for (key, card) in self._cards.items()]
     
     @property
     def num_cards(self):
