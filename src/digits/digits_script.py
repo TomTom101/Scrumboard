@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin python
 
 '''
 SVM and KNearest digit recognition.
@@ -65,8 +65,10 @@ def deskew(img):
     return img
 
 class StatModel(object):
-    def load(self, s_size):
+    def __init__(self, s_size):
         self.fn = "%d_%s" % ((s_size*100), self.TrainingFile)
+        
+    def load(self):
         if os.path.isfile(self.fn):
             print "loading model ..."
             self.model.load(self.fn)
@@ -81,7 +83,8 @@ class StatModel(object):
 class SVM(StatModel):
     TrainingFile = 'digits_svm.dat'
     LoadedModel = False
-    def __init__(self, C = 1, gamma = 0.5):
+    def __init__(self, C=1, gamma=0.5, s_size=1):
+        super(SVM, self).__init__(s_size)
         
         self.params = dict( kernel_type = cv2.SVM_RBF,
                             svm_type = cv2.SVM_C_SVC,
@@ -158,7 +161,7 @@ if __name__ == '__main__':
     digits = map(deskew, digits)
     samples = preprocess_hog(digits)
 
-    s_size = .5
+    s_size = .25
     train_n = int(s_size*len(samples))
 
     cv2.imshow('singel', digits[0])
@@ -166,15 +169,8 @@ if __name__ == '__main__':
     samples_train, samples_test = np.split(samples, [train_n])
     labels_train, labels_test = np.split(labels, [train_n])
 
-
-    #print 'training KNearest...'
-    #model = KNearest(k=4)
-    #model.train(samples_train, labels_train)
-    #vis = evaluate_model(model, digits_test, samples_test, labels_test)
-    #cv2.imshow('KNearest test', vis)
-
-    model = SVM(C=2.67, gamma=5.383)
-    if not model.load(s_size):
+    model = SVM(C=2.67, gamma=5.383, prefix=s_size)
+    if not model.load():
         print 'training SVM...'
         model.train(samples_train, labels_train)
         print "done"
