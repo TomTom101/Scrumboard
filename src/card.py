@@ -11,7 +11,7 @@ class Card(object):
         The floodFill point can be any on the edge.
         """
         self._image = img.binarize(thresh=95).morphClose().dilate().embiggen((img.width+2, img.height+2), color=Color.WHITE).floodFill((0, 0), color=Color.BLACK)
-        self.status = None
+        self._status = None
         self._key = None
         self._x = 0
         # Filter out noise. The size of course depends on the card dimension. This might be too much when cards are really small.
@@ -50,6 +50,15 @@ class Card(object):
             img = self._image
         img.show()
         time.sleep(t)
+
+    @property
+    def status(self):
+        return self._status
+    @status.setter
+    def status(self, value):
+        if(self._status is not None and value != self._status):
+            print "Value changed of WWW-%s!" % self._key
+        self._status = value
 
     @property
     def x(self):

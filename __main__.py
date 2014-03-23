@@ -3,6 +3,10 @@
 import cProfile
 from src import board
 
+
+def changedStatus(key, status):
+    pass
+
 Myboard = board.Board(save_training_file=False)
 Myboard.image = '/Users/thobra/scrumboard/tests/data/board_ni_2.JPG'
 Myboard.findLines()
@@ -12,6 +16,7 @@ def run():
     Myboard.image = '/Users/thobra/scrumboard/tests/data/board_ni_2.JPG'
     Myboard.findCards()
     if Myboard.hasCards():
-        print Myboard.keys
-
-cProfile.run("run()")
+        print Myboard.list_cards
+        Myboard.card("2600").status = 4
+run()
+#cProfile.run("run()")

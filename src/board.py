@@ -14,6 +14,8 @@ class Board(object):
     SVMData = 'own_digits_svm.dat'
     # By what factor should the board be scaled down
     ScaleBoard = .1
+    # What colors to look for
+    FindColors = [(160, 140, 40), (125, 140, 60)]
     def __init__(self, save_training_file=False):
         self.save_training_file = save_training_file
         self._image = None
@@ -21,7 +23,6 @@ class Board(object):
         self._minsize = 0
         self._num_cards = 0
         self._cards = {}
-        self.find_colors = [(160, 140, 40), (125, 140, 60)]
         self.lane_separators = None
 
         self.model = ocr.SVM()
@@ -57,7 +58,7 @@ class Board(object):
         """
         if not self._image:
             raise Exception("Must set Board.image first!")
-        img = self._imageprocessed.hueDistance(self.find_colors[0]).morphClose().binarize(thresh=15)
+        img = self._imageprocessed.hueDistance(Board.FindColors[0]).morphClose().binarize(thresh=15)
 
         fs = img.findBlobs(minsize=self.minsize)
 
