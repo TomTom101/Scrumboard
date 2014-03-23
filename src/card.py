@@ -7,7 +7,7 @@ class Card(object):
         """ after binarization, increase canvas each side by 1px and fill
          with black.
         This way all areas that touch
-        the card will also be filled, like lines the card is hung over. 
+        the card will also be filled, like lines the card is hung over.
         The floodFill point can be any on the edge.
         """
         self._image = img.binarize(thresh=95).morphClose().dilate().embiggen((img.width+2, img.height+2), color=Color.WHITE).floodFill((0, 0), color=Color.BLACK)
@@ -16,7 +16,7 @@ class Card(object):
         self._x = 0
         # Filter out noise. The size of course depends on the card dimension. This might be too much when cards are really small.
         self.minsize = 50
-        self.cells = self._extract_cells()  
+        self.cells = self._extract_cells()
 
     def _extract_cells(self):
         fs = self._image.findBlobs(minsize=self.minsize)
@@ -35,7 +35,7 @@ class Card(object):
                 char.image = self._image
                 char.drawMinRect(width=4, color=(0, 255, 0))
                 char_box = char.boundingBox()
-                # Creates a tuple with 2 identical values of the longest side + 2px. e.g. for w*h = 65*70 == (72,72) 
+                # Creates a tuple with 2 identical values of the longest side + 2px. e.g. for w*h = 65*70 == (72,72)
                 canvas = tuple([(max(char_box[-2:])+2) for x in range(2)])
                 digit = self._image.crop(char).embiggen(canvas).resize(20, 20)
                 #digit.show()
@@ -57,11 +57,11 @@ class Card(object):
     @x.setter
     def x(self, value):
         self._x = value
-    
+
     @property
     def key(self):
         return self._key
     @key.setter
     def key(self, value):
         self._key = value
-    
+

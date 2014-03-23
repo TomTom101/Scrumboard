@@ -23,11 +23,11 @@ class Board(object):
         self._cards = {}
         self.find_colors = [(160, 140, 40), (125, 140, 60)]
         self.lane_separators = None
-        
+
         self.model = ocr.SVM()
         if not self.model.load(Board.SVMData):
             raise Exception("SVM data could not be loaded: %s" % Board.SVMData)
-        
+
         self.train_inbox_path = os.path.join(os.path.dirname(__file__), 'train/inbox')
 
     def _preprocess(self, img):
@@ -48,8 +48,8 @@ class Board(object):
     def card(self, key):
         return self._cards[key]
 
-    
-    def findCards(self):
+
+    def findCards(self): #pylint: disable=C0103
         """analyzes an image and returns all blobs
 
         :returns: A SimpleCV FeatureSet
@@ -57,8 +57,8 @@ class Board(object):
         """
         if not self._image:
             raise Exception("Must set Board.image first!")
-        img = self._imageprocessed.hueDistance(self.find_colors[0]).morphClose().binarize(thresh=15) 
-        
+        img = self._imageprocessed.hueDistance(self.find_colors[0]).morphClose().binarize(thresh=15)
+
         fs = img.findBlobs(minsize=self.minsize)
 
         if fs:
@@ -71,7 +71,7 @@ class Board(object):
 
                 if card.key:
                     card.x = b.x
-                    card.status = self.assignStatus(card)
+                    card.status = self._assign_status(card)
                     self._cards[card.key] = card
                     self.dosave_training_file(card)
                 #b.image = img#.self._image
@@ -114,20 +114,20 @@ class Board(object):
 
         return (x, y, w*size_up_factor-15, h*size_up_factor-15)
 
-    def detectKey(self, cells):
+    def detectKey(self, cells): #pylint: disable=C0103
         if cells:
             cells = map(ocr.deskew, cells)
             samples = ocr.preprocess_hog(cells)
             key = self.model.predict(samples)
-            
-            # @todo we must not accept responses too far away from any match. 
+
+            # @todo we must not accept responses too far away from any match.
             # Every noise will be translated into a number.
-            
+
             return ''.join(str(int(y)) for y in key)
 
         return None
 
-    def assignStatus(self, card):
+    def _assign_status(self, card):
         if self.lane_separators == None:
             self.findLines()
 
@@ -135,12 +135,12 @@ class Board(object):
         if self.lane_separators != None:
             for line_x in self.lane_separators:
                 if card.x < line_x:
-                    return status 
+                    return status
                 status = status+1
 
         return None
 
-    def hasCards(self):
+    def hasCards(self): #pylint: disable=C0103
         return len(self._cards) > 0
 
     def dosave_training_file(self, card):
@@ -149,7 +149,7 @@ class Board(object):
             filename = '%s/%s.png' % (self.train_inbox_path, card.key)
             cv2.imwrite(filename, grid)
 
-    def findLines(self):
+    def findLines(self): #pylint: disable=C0103
         """analyzes an image and returns all lines
 
         :param board_img_file: filename of an image of the entire board
@@ -168,11 +168,11 @@ class Board(object):
 
     def save(self):
         self._image.save('save.jpg')
-    
+
     @property
     def keys(self):
         return [card.key for card in self._cards.values()]
-    
+
     @property
     def swimlanes(self):
         return len(self.lane_separators)+1
@@ -187,13 +187,13 @@ class Board(object):
     @property
     def list_cards(self):
         return [{"key": card.key, "status": card.status} for (key, card) in self._cards.items()]
-    
+
     @property
     def num_cards(self):
         return self._num_cards
 
-    def show(self, img=None, t=1):
+    def show(self, img=None, time=1):
         if img is None:
             img = self._image
         img.show()
-        time.sleep(t)
+        time.sleep(time)
