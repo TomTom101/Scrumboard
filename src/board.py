@@ -13,7 +13,7 @@ class Board(object):
 	def __init__(self, saveTrainingFile=False):
 		self.saveTrainingFile = saveTrainingFile
 		self._image = None
-		self._minsize = 5000;
+		self._num_cards = 0
 		self.findColors = [(160, 140, 40), (125,140,60)]
 		self.lane_separators = None
 		self.model = ocr.SVM()
@@ -34,6 +34,8 @@ class Board(object):
 		if not image.__class__.__name__ == 'Image':
 			image = Image(image)
 		self._image = self.__preprocess(image)
+		area = float(self._image.width*self._image.height)
+		self._minsize = area/500;
 
 	def card(self, key):
 	    return self._cards[key]
@@ -47,13 +49,13 @@ class Board(object):
 		"""
 		if not self._image:
 			raise Exception("Must set Board.image first!")
-		""" maybe better: findBlobsFromHueHistogram() """
-		img = self._image.hueDistance(self.findColors[0]).morphClose().binarize(thresh=20) 
+		""" hueDistance costs 50% of the performance! maybe better: findBlobsFromHueHistogram() """
+		img = self._image.hueDistance(self.findColors[0]).morphClose().binarize(thresh=15) 
 		self._cards = {}
 		fs = img.findBlobs(minsize=self.minsize)
 
 		if fs:
-			fs.draw()
+			self._num_cards = len(fs)
 			for b in fs.sortX():
 				card_img = self._prepareCardBlob(b)
 				card = c.Card(card_img)
