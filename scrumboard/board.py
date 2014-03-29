@@ -1,9 +1,9 @@
-
+import scrumboard
 import os, time
-from SimpleCV import Image
-from src.digits import digits as ocr
-from src.digits import common
-import src.card as c
+from SimpleCV import Color, Image
+from scrumboard.digits import digits as ocr
+from scrumboard.digits import common
+import scrumboard.card as c
 import cv2
 
 class Board(object):
@@ -13,7 +13,7 @@ class Board(object):
     # Location of HOG data file
     SVMData = 'own_digits_svm.dat'
     # By what factor should the board be scaled down
-    ScaleBoard = .1
+    ScaleBoard = .2
     # What colors to look for
     FindColors = [(160, 140, 40), (125, 140, 60)]
     def __init__(self, save_training_file=False):
@@ -21,6 +21,7 @@ class Board(object):
         self._image = None
         self._imageprocessed = None
         self._minsize = 0
+        self._blobs = None
         self._num_cards = 0
         self._cards = {}
         self.lane_separators = None
@@ -34,21 +35,29 @@ class Board(object):
     def _preprocess(self, img):
         return img.scale(Board.ScaleBoard)
 
-    @property
-    def image(self):
-        return self._image
-    @image.setter
-    def image(self, image):
-        if not image.__class__.__name__ == 'Image':
-            image = Image(image)
-        self._imageprocessed = self._preprocess(image)
-        area = float(self._imageprocessed.width*self._imageprocessed.height)
-        self._minsize = area/500
-        self._image = image
 
-    def card(self, key):
-        return self._cards[key]
 
+    def findLines(self): #pylint: disable=C0103
+        """analyzes an image and returns all lines
+
+        :param board_img_file: filename of an image of the entire board
+        :returns: A SimpleCV FeatureSet
+        :rtype: SimpleCV.Features.Features.FeatureSet
+        """
+        img = self._imageprocessed.binarize(thresh=50).morphClose()
+        lines = img.findLines(
+            minlinelength=self._imageprocessed.height*.5,
+            maxlinegap=self._imageprocessed.height*.5,
+            maxpixelgap=1,
+            threshold=200)
+
+        #lines = self._imageprocessed.findBlobs(minsize=self._imageprocessed.height)
+        if lines:
+            #lines.image = img
+            self.lane_separators = lines.x()
+            self.lane_separators.sort()
+            return lines
+        return None
 
     def findCards(self): #pylint: disable=C0103
         """analyzes an image and returns all blobs
@@ -58,14 +67,17 @@ class Board(object):
         """
         if not self._image:
             raise Exception("Must set Board.image first!")
-        img = self._imageprocessed.hueDistance(Board.FindColors[0]).morphClose().binarize(thresh=15)
 
-        fs = img.findBlobs(minsize=self.minsize)
+        thresh = float(scrumboard.config.get('setup', 'binarize_threshold'))
+        img = self._imageprocessed \
+                .hueDistance(Board.FindColors[0]) \
+                .binarize(thresh=thresh) \
+                .morphOpen()
 
-        if fs:
-            self._num_cards = len(fs)
-            for b in fs.sortX():
-                b.image = self._image
+        self._blobs = img.findBlobs(minsize=self.minsize)
+
+        if self._blobs:
+            for b in self._blobs.sortX():
                 card_img = self._prepareCardBlob(b)
                 card = c.Card(card_img)
                 card.key = self.detectKey(card.cells)
@@ -75,10 +87,13 @@ class Board(object):
                     card.status = self._assign_status(card)
                     self._cards[card.key] = card
                     self.dosave_training_file(card)
-                #b.image = img#.self._image
-                #b.drawMinRect(color=Color.BLUE, width=3)
-            #self.show(img)
         return self._cards
+
+    def draw(self):
+        for b in self._blobs:
+            b.image = self._imageprocessed
+            b.drawMinRect(color=Color.RED, width=5)
+
 
     def _prepareCardBlob(self, blob):
         if abs(blob.angle()) > 45:
@@ -86,7 +101,10 @@ class Board(object):
         size_up_factor = 1/Board.ScaleBoard
         crop_region = map(lambda x: ((size_up_factor*x[0], size_up_factor*x[1])), blob.points)
         #crop_region = blob
-        img = self._image.crop(crop_region, centered=False).rotate(blob.angle(), point=[0, 0], fixed=True)
+        img = self._image.crop(crop_region, \
+            centered=False).rotate(blob.angle(), \
+            point=[0, 0], \
+            fixed=True)
         #self.show(img)
         crop = self._getPostRotationCropRegion(blob)
 
@@ -150,25 +168,23 @@ class Board(object):
             filename = '%s/%s.png' % (self.train_inbox_path, card.key)
             cv2.imwrite(filename, grid)
 
-    def findLines(self): #pylint: disable=C0103
-        """analyzes an image and returns all lines
+    @property
+    def image(self):
+        return self._image
+    @image.setter
+    def image(self, image):
+        if not image.__class__.__name__ == 'Image':
+            image = Image(image)
+        self._imageprocessed = self._preprocess(image)
+        area = float(self._imageprocessed.width*self._imageprocessed.height)
+        self._minsize = area/500
+        self._image = image
 
-        :param board_img_file: filename of an image of the entire board
-        :returns: A SimpleCV FeatureSet
-        :rtype: SimpleCV.Features.Features.FeatureSet
-        """
-        img = self._image.binarize(thresh=50).morphClose()
-#       lines = self._image.findLines(minlinelength=self._image.height*.5, maxlinegap=self._image.height*.5, maxpixelgap=1, threshold=150)
-
-        lines = img.findBlobs(minsize=self._image.height)
-        if lines:
-            self.lane_separators = lines.x()
-            self.lane_separators.sort()
-            return lines
-        return None
+    def card(self, key):
+        return self._cards[key]
 
     def save(self):
-        self._image.save('save.jpg')
+        self._imageprocessed.save('save.jpg')
 
     @property
     def keys(self):
@@ -191,10 +207,10 @@ class Board(object):
 
     @property
     def num_cards(self):
-        return self._num_cards
+        return len(self._blobs)
 
-    def show(self, img=None, time=1):
+    def show(self, img=None, sec=1):
         if img is None:
-            img = self._image
+            img = self._imageprocessed
         img.show()
-        time.sleep(time)
+        time.sleep(sec)

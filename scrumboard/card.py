@@ -10,7 +10,7 @@ class Card(object):
         the card will also be filled, like lines the card is hung over.
         The floodFill point can be any on the edge.
         """
-        self._image = img.binarize(thresh=95).morphClose().dilate().embiggen((img.width+2, img.height+2), color=Color.WHITE).floodFill((0, 0), color=Color.BLACK)
+        self._image = img.binarize(thresh=95).morphOpen().embiggen((img.width+2, img.height+2), color=Color.WHITE).floodFill((0, 0), color=Color.BLACK)
         self._status = None
         self._key = None
         self._x = 0
