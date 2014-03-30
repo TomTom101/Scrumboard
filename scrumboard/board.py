@@ -20,6 +20,8 @@ class Board(object):
         self.save_training_file = save_training_file
         self._image = None
         self._imageprocessed = None
+        # MIST - behelf:
+        self._imageprocessed2 = None
         self._minsize = 0
         self._blobs = None
         self._num_cards = 0
@@ -31,6 +33,7 @@ class Board(object):
             raise Exception("SVM data could not be loaded: %s" % Board.SVMData)
 
         self.train_inbox_path = os.path.join(os.path.dirname(__file__), 'train/inbox')
+        scrumboard.load_config()
 
     def _preprocess(self, img):
         return img.scale(Board.ScaleBoard)
@@ -68,13 +71,14 @@ class Board(object):
         if not self._image:
             raise Exception("Must set Board.image first!")
 
-        thresh = float(scrumboard.config.get('setup', 'binarize_threshold'))
-        img = self._imageprocessed \
+        thresh = float(scrumboard.config.get('settings', 'binarize_threshold'))
+        print thresh
+        self._imageprocessed2 = self._imageprocessed \
                 .hueDistance(Board.FindColors[0]) \
                 .binarize(thresh=thresh) \
                 .morphOpen()
 
-        self._blobs = img.findBlobs(minsize=self.minsize)
+        self._blobs = self._imageprocessed2.findBlobs(minsize=self.minsize)
 
         if self._blobs:
             for b in self._blobs.sortX():
@@ -87,12 +91,18 @@ class Board(object):
                     card.status = self._assign_status(card)
                     self._cards[card.key] = card
                     self.dosave_training_file(card)
+
         return self._cards
 
-    def draw(self):
-        for b in self._blobs:
-            b.image = self._imageprocessed
-            b.drawMinRect(color=Color.RED, width=5)
+    def draw(self, save=False):
+        if self._blobs is not None:
+            for b in self._blobs:
+                b.image = self._imageprocessed2
+                b.drawMinRect(color=Color.RED, width=5)
+                if save:
+                    c_jpg = os.path.join(scrumboard.config.get('config', 'static_file_path'), \
+                        'cards.jpg')
+                    self._imageprocessed2.save(c_jpg)
 
 
     def _prepareCardBlob(self, blob):
