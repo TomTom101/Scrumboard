@@ -13,4 +13,4 @@ suite.addTests(loader.loadTestsFromModule(card_test))
 runner = unittest.TextTestRunner(verbosity=2)
 result = runner.run(suite)
 
- 
+

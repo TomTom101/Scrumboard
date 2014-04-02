@@ -47,16 +47,21 @@ class Board(object):
         :returns: A SimpleCV FeatureSet
         :rtype: SimpleCV.Features.Features.FeatureSet
         """
-        img = self._imageprocessed.binarize(thresh=50).morphClose()
-        lines = img.findLines(
-            minlinelength=self._imageprocessed.height*.5,
-            maxlinegap=self._imageprocessed.height*.5,
-            maxpixelgap=1,
-            threshold=200)
+        self._imageprocessed_lines = self._imageprocessed.binarize(thresh=40).morphClose() \
+            .crop(  x=0, y=self._imageprocessed.height*.25, \
+                    w=self._imageprocessed.width, \
+                    h=self._imageprocessed.height*.75)
 
-        #lines = self._imageprocessed.findBlobs(minsize=self._imageprocessed.height)
+        # lines = img.findLines(
+        #     minlinelength=self._imageprocessed_lines.height*.5,
+        #     maxlinegap=self._imageprocessed_lines.height*.5,
+        #     maxpixelgap=1,
+        #     threshold=200)
+
+        lines = self._imageprocessed_lines.findBlobs(minsize=self._imageprocessed_lines.height)
         if lines:
             #lines.image = img
+#            lines.draw()
             self.lane_separators = lines.x()
             self.lane_separators.sort()
             return lines
@@ -72,13 +77,12 @@ class Board(object):
             raise Exception("Must set Board.image first!")
 
         thresh = float(scrumboard.config.get('settings', 'binarize_threshold'))
-        print thresh
-        self._imageprocessed2 = self._imageprocessed \
+        self._imageprocessed_cards = self._imageprocessed \
                 .hueDistance(Board.FindColors[0]) \
                 .binarize(thresh=thresh) \
                 .morphOpen()
 
-        self._blobs = self._imageprocessed2.findBlobs(minsize=self.minsize)
+        self._blobs = self._imageprocessed_cards.findBlobs(minsize=self.minsize)
 
         if self._blobs:
             for b in self._blobs.sortX():
@@ -93,16 +97,6 @@ class Board(object):
                     self.dosave_training_file(card)
 
         return self._cards
-
-    def draw(self, save=False):
-        if self._blobs is not None:
-            for b in self._blobs:
-                b.image = self._imageprocessed2
-                b.drawMinRect(color=Color.RED, width=5)
-                if save:
-                    c_jpg = os.path.join(scrumboard.config.get('config', 'static_file_path'), \
-                        'cards.jpg')
-                    self._imageprocessed2.save(c_jpg)
 
 
     def _prepareCardBlob(self, blob):
@@ -218,6 +212,18 @@ class Board(object):
     @property
     def num_cards(self):
         return len(self._blobs)
+
+    def draw(self, img=None, save=False):
+        if self._blobs is not None:
+            if img is None:
+                img = self._imageprocessed
+            for b in self._blobs:
+                b.image = img
+                b.drawMinRect(color=Color.RED, width=5)
+                if save:
+                    c_jpg = os.path.join(scrumboard.config \
+                        .get('config', 'static_file_path'), 'cards.jpg')
+                    img.save(c_jpg)
 
     def show(self, img=None, sec=1):
         if img is None:
