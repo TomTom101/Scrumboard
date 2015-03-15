@@ -18,6 +18,7 @@
 <div class="container">
   <h1>Setup</h1>
   {{ wtf.quick_form(form, enctype="multipart/form-data", button_map={'submit_button': 'primary'}) }}
+  {% if cards %}
   <table class="table">
   <thead>
     <tr>
@@ -31,6 +32,7 @@
     {% endfor %}
   </tbody>
   </table>
+  {% endif %}
 
 <img src="{{ url_for('static', filename='cards.jpg') }}?t={{ timestamp }}" width="100%" />
 </div>
