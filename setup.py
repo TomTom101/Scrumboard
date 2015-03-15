@@ -1,6 +1,9 @@
 from distutils.core import setup
+
 setup(name='scrumboard',
       version='0.1',
-      package_dir={'scrumboard': 'src'},
-      packages=['scrumboard'],
-      )
+      author='Thomas Brandl',
+      author_email='thobra@gmail.com',
+      url='https://github.com/TomTom101/Scrumboard/',
+      packages=['scrumboard', 'www']
+)

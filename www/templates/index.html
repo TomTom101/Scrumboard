@@ -17,9 +17,22 @@
 
 <div class="container">
   <h1>Setup</h1>
-
   {{ wtf.quick_form(form, enctype="multipart/form-data", button_map={'submit_button': 'primary'}) }}
-<img src="{{ url_for('static', filename='cards.jpg') }}?t={{ timestamp }}" />
+  <table class="table">
+  <thead>
+    <tr>
+      <th data-sortable="true">Key</th>
+      <th data-sortable="true">Status</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for card in cards %}
+    <tr><td>{{card.key}}</td><td>{{card.status}}</td></tr>
+    {% endfor %}
+  </tbody>
+  </table>
+
+<img src="{{ url_for('static', filename='cards.jpg') }}?t={{ timestamp }}" width="100%" />
 </div>
 {% endblock %}
 

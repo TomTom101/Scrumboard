@@ -13,7 +13,7 @@ class Board(object):
     # Location of HOG data file
     SVMData = 'own_digits_svm.dat'
     # By what factor should the board be scaled down
-    ScaleBoard = .2
+    ScaleBoard = .7
     # What colors to look for
     FindColors = [(160, 140, 40), (125, 140, 60)]
     def __init__(self, save_training_file=False):

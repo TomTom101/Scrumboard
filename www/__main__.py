@@ -2,6 +2,8 @@ import scrumboard
 from scrumboard.board import Board
 from flask import *
 from flask_bootstrap import Bootstrap
+from flask_debugtoolbar import DebugToolbarExtension
+
 #from flask_appconfig import AppConfig
 from flask_wtf import Form, RecaptchaField
 from wtforms import Form as InsecureForm
@@ -47,6 +49,8 @@ class SettingsForm(Form):
 
 def create_app(config=None):
     app = Flask(__name__)
+    toolbar = DebugToolbarExtension(app)
+    app.debug = True
     # app.register_blueprint(Blueprint('images', \
     #     __name__, \
     #     static_folder=scrumboard.config.get('config', 'static_file_path')))
@@ -82,6 +86,7 @@ def create_app(config=None):
         default = config.as_dict()
         form = SettingsForm(**default['settings'])
         filename = None
+        cards = None
         if request.method == 'POST' and form.validate():
             #fn = form.select_image.data
             fn = request.files['select_image']
@@ -95,10 +100,13 @@ def create_app(config=None):
             img = loadImg(filepath)
             board.image = img
             board.findCards()
+            # Image.save does not return a status, we don't know whether it was successful
             board.draw(save=True)
-            flash('Saved successfully')
+            cards = board.list_cards
+            flash('Image loaded successfully')
+            print form
 
-        return render_template('index.html', form=form, timestamp=time.time())
+        return render_template('index.html', form=form, timestamp=time.time(), cards=cards)
 
     return app
 
